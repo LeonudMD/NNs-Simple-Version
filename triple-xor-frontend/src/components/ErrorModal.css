@@ -1,0 +1,136 @@
+﻿/* /src/components/ErrorModal.css */
+
+/* Общие стили для оверлея и модального окна */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.6);
+    z-index: 9998;
+    opacity: 0;
+    animation: fadeIn 0.3s forwards;
+}
+
+.modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.8);
+    background: #fff;
+    color: #333;
+    width: 90%;
+    max-width: 500px;
+    border-radius: 10px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    z-index: 9999;
+    opacity: 0;
+    animation: slideIn 0.3s forwards;
+}
+
+/* Заголовок модалки */
+.modal-header {
+    padding: 1rem;
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header.error {
+    background: linear-gradient(45deg, #ff6b6b, #ff4757);
+    color: #fff;
+}
+
+.modal-header.warning {
+    background: linear-gradient(45deg, #ffa502, #ff793f);
+    color: #fff;
+}
+
+.modal-header h2 {
+    margin: 0;
+    font-size: 1.5rem;
+}
+
+.close-button {
+    background: transparent;
+    border: none;
+    color: #fff;
+    font-size: 1.5rem;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.close-button:hover {
+    transform: rotate(90deg);
+}
+
+/* Содержимое модалки */
+.modal-content {
+    padding: 1.5rem;
+    font-size: 1.1rem;
+    line-height: 1.5;
+}
+
+/* Футер модалки */
+.modal-footer {
+    padding: 1rem;
+    display: flex;
+    justify-content: flex-end;
+    border-bottom-left-radius: 10px;
+    border-bottom-right-radius: 10px;
+}
+
+.close-btn {
+    padding: 0.5rem 1rem;
+    background-color: #3498db;
+    border: none;
+    border-radius: 5px;
+    color: #fff;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.2s;
+}
+
+.close-btn:hover {
+    background-color: #2980b9;
+    transform: translateY(-2px);
+}
+
+/* Анимации */
+@keyframes fadeIn {
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideIn {
+    to {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
+}
+
+@keyframes fadeOut {
+    to {
+        opacity: 0;
+    }
+}
+
+@keyframes slideOut {
+    to {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.8);
+    }
+}
+
+/* Анимация закрытия */
+.modal-overlay.fade-out {
+    animation: fadeOut 0.3s forwards;
+}
+
+.modal.fade-out {
+    animation: slideOut 0.3s forwards;
+}

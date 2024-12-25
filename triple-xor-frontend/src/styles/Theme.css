@@ -1,0 +1,172 @@
+﻿/* src/styles/Theme.css */
+
+/* 
+  Используем data-theme="light" и data-theme="dark".
+  Применяем CSS-переменные, чтобы легко менять цвета.
+*/
+
+:root {
+    --transition-speed: 0.3s;
+    --transition-easing: ease-in-out;
+    --font-family: "Segoe UI", Arial, sans-serif;
+    --border-radius: 8px;
+}
+
+/* Светлая тема */
+:root[data-theme="light"] {
+    --bg-color: #f8f9fa;           /* светлый фон */
+    --text-color: #212529;         /* тёмный текст */
+    --card-bg-color: #ffffff;      /* карточки белые */
+    --card-header-bg: #e6e6e6;     /* заголовок чуть сероват */
+    --card-border-color: #ccc;     /* светло-серый */
+    --btn-primary-bg: #4caf50;     /* зелёная кнопка */
+    --btn-primary-color: #ffffff;  /* белый текст */
+    --btn-success-bg: #198754;     /* современный зелёный (Bootstrap) */
+    --btn-outline-secondary-bg: transparent;
+    --btn-outline-secondary-color: #6c757d;
+}
+
+/* Тёмная тема */
+:root[data-theme="dark"] {
+    --bg-color: #1e1e2f;            /* тёмно-синий/фиолетовый */
+    --text-color: #ececec;          /* почти белый */
+    --card-bg-color: #2f2f44;       /* фон карточки */
+    --card-header-bg: #3a3a50;      /* фон заголовка карточки */
+    --card-border-color: #5f5f7f;   /* темно-серый */
+    --btn-primary-bg: #4caf50;      /* зелёная кнопка та же */
+    --btn-primary-color: #ffffff;
+    --btn-success-bg: #198754;
+    --btn-outline-secondary-bg: transparent;
+    --btn-outline-secondary-color: #d9d9d9;
+}
+
+/* Применяем переменные к элементам */
+html, body {
+    margin: 0;
+    padding: 0;
+    font-family: var(--font-family);
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    transition:
+            background-color var(--transition-speed) var(--transition-easing),
+            color var(--transition-speed) var(--transition-easing);
+}
+
+.app-container {
+    max-width: 1200px;
+    margin: auto;
+    padding: 20px;
+}
+
+/* Карточки */
+.card {
+    border-radius: var(--border-radius);
+    border: 1px solid var(--card-border-color);
+    background-color: var(--card-bg-color);
+    margin-bottom: 20px;
+    transition:
+            background-color var(--transition-speed) var(--transition-easing),
+            border-color var(--transition-speed) var(--transition-easing);
+}
+
+.card-header {
+    background-color: var(--card-header-bg);
+    border-bottom: 1px solid var(--card-border-color);
+    padding: 15px;
+    border-radius: var(--border-radius) var(--border-radius) 0 0;
+    transition: background-color var(--transition-speed) var(--transition-easing);
+}
+
+.card-body {
+    padding: 20px;
+}
+
+/* Кнопки */
+.btn {
+    cursor: pointer;
+    transition: background-color var(--transition-speed) var(--transition-easing),
+    color var(--transition-speed) var(--transition-easing),
+    border-color var(--transition-speed) var(--transition-easing);
+}
+
+/* Пример кнопки .btn-primary */
+.btn-primary {
+    background-color: var(--btn-primary-bg);
+    color: var(--btn-primary-color);
+    border: none;
+}
+
+.btn-primary:hover {
+    filter: brightness(1.1);
+}
+
+/* Кнопка .btn-success */
+.btn-success {
+    background-color: var(--btn-success-bg);
+    color: #fff;
+    border: none;
+}
+
+.btn-success:hover {
+    filter: brightness(1.1);
+}
+
+/* .btn-outline-secondary */
+.btn-outline-secondary {
+    background-color: var(--btn-outline-secondary-bg);
+    color: var(--btn-outline-secondary-color);
+    border: 1px solid var(--btn-outline-secondary-color);
+}
+
+.btn-outline-secondary:hover {
+    background-color: var(--btn-outline-secondary-color);
+    color: var(--bg-color);
+}
+
+/* Тогглер темы */
+.theme-toggler {
+    margin-left: auto;
+    padding: 0.5rem 1rem;
+    border-radius: var(--border-radius);
+    border: 2px solid var(--text-color);
+    background-color: transparent;
+    color: var(--text-color);
+    font-size: 1rem;
+    margin-right: 10px;
+}
+
+.theme-toggler:hover {
+    background-color: var(--text-color);
+    color: var(--bg-color);
+}
+
+/* Таблицы */
+.table {
+    margin-top: 1rem;
+    width: 100%;
+    border-collapse: collapse;
+    color: var(--text-color);
+}
+
+.table th,
+.table td {
+    padding: 10px;
+    border: 1px solid var(--card-border-color);
+    text-align: center;
+}
+
+.table.table-dark tbody tr.match {
+    background-color: rgba(50, 205, 50, 0.2) !important;
+}
+
+.table.table-dark tbody tr.mismatch {
+    background-color: rgba(255, 99, 71, 0.2) !important;
+}
+
+/* Статистика */
+.statistic-card {
+    border: 1px solid var(--card-border-color);
+    border-radius: var(--border-radius);
+    padding: 15px;
+    margin-top: 20px;
+}
