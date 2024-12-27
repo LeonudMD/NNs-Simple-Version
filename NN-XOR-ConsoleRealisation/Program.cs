@@ -1,15 +1,16 @@
-﻿using System.Text.Json;
+﻿using System.Runtime.Serialization.Formatters.Binary;
 
 namespace TripleXORNeuralNetwork
 {
     // Класс, представляющий отдельный нейрон
+    [Serializable]
     public class Neuron
     {
         public List<double> Weights { get; set; }
         public double Bias { get; set; }
         public double Output { get; private set; }
         public double Delta { get; set; }
-
+        [NonSerialized]
         private static Random rnd = new Random();
 
         public Neuron(int inputCount)
@@ -53,6 +54,7 @@ namespace TripleXORNeuralNetwork
     }
 
     // Класс, представляющий слой нейронов
+    [Serializable]
     public class Layer
     {
         public List<Neuron> Neurons { get; private set; }
@@ -84,7 +86,8 @@ namespace TripleXORNeuralNetwork
     {
         public List<Layer> Layers { get; private set; }
         private double learningRate;
-        private const string FilePath = "network_parameters.json";
+        private const string FilePath = "network_parameters.nn";
+
         public NeuralNetwork(int inputSize, int hiddenNeurons, int outputNeurons, double learningRate = 0.1)
         {
             Layers = new List<Layer>();
@@ -92,7 +95,7 @@ namespace TripleXORNeuralNetwork
             // Проверяем наличие файла с параметрами
             if (File.Exists(FilePath))
             {
-                LoadParameters();
+                LoadParametersBinary();
             }
             else
             {
@@ -104,44 +107,37 @@ namespace TripleXORNeuralNetwork
             }
         }
 
-        // Метод сохранения параметров сети в файл
-        public void SaveParameters()
-        {
-            var networkData = Layers.Select(layer =>
-                layer.Neurons.Select(neuron => new
-                {
-                    neuron.Weights,
-                    neuron.Bias
-                }).ToList()
-            ).ToList();
-
-            var json = JsonSerializer.Serialize(networkData, new JsonSerializerOptions { WriteIndented = true });
-            File.WriteAllText(FilePath, json);
-
-            Console.WriteLine("Параметры сети успешно сохранены.");
-        }
-
-        // Метод загрузки параметров сети из файла
-        public void LoadParameters()
+        // Сохранение параметров сети в файл .nn
+        public void SaveParametersBinary()
         {
             try
             {
-                var json = File.ReadAllText(FilePath);
-                var networkData = JsonSerializer.Deserialize<List<List<dynamic>>>(json);
-
-                Layers = new List<Layer>();
-                foreach (var layerData in networkData)
+                using (var fileStream = new FileStream(FilePath, FileMode.Create, FileAccess.Write))
                 {
-                    var layer = new Layer(layerData.Count, layerData[0].Weights.Count);
-                    for (int i = 0; i < layerData.Count; i++)
-                    {
-                        layer.Neurons[i].Weights = layerData[i].Weights.ToList();
-                        layer.Neurons[i].Bias = layerData[i].Bias;
-                    }
-                    Layers.Add(layer);
+                    var formatter = new BinaryFormatter();
+                    formatter.Serialize(fileStream, Layers);
                 }
+                Console.WriteLine("Параметры сети успешно сохранены в файл .nn.");
+            }
+            catch (Exception ex)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine($"Ошибка сохранения параметров сети: {ex.Message}");
+                Console.ResetColor();
+            }
+        }
 
-                Console.WriteLine("Параметры сети успешно загружены из файла.");
+        // Загрузка параметров сети из файла .nn
+        public void LoadParametersBinary()
+        {
+            try
+            {
+                using (var fileStream = new FileStream(FilePath, FileMode.Open, FileAccess.Read))
+                {
+                    var formatter = new BinaryFormatter();
+                    Layers = (List<Layer>)formatter.Deserialize(fileStream);
+                }
+                Console.WriteLine("Параметры сети успешно загружены из файла .nn.");
             }
             catch (Exception ex)
             {
@@ -433,13 +429,13 @@ namespace TripleXORNeuralNetwork
                     Console.WriteLine("Порог ошибки достигнут. Обучение завершено.");
 
                     // Сохранение параметров после успешного завершения
-                    network.SaveParameters();
+                    network.SaveParametersBinary();
                     return;
                 }
             }
 
             // Сохранение параметров после завершения обучения по эпохам
-            network.SaveParameters();
+            network.SaveParametersBinary();
             Console.WriteLine("Обучение завершено.");
         }
 
@@ -521,6 +517,7 @@ namespace TripleXORNeuralNetwork
                 Console.WriteLine("Тестирование завершено.");
                 Console.ResetColor();
             }
+
             catch (Exception ex)
             {
                 Console.ForegroundColor = ConsoleColor.Red;
