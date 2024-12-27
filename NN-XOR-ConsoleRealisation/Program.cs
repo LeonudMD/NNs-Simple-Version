@@ -8,7 +8,7 @@ namespace TripleXORNeuralNetwork
     {
         public List<double> Weights { get; set; }
         public double Bias { get; set; }
-        public double Output { get; private set; }
+        public double Output { get; set; }
         public double Delta { get; set; }
         [NonSerialized]
         private static Random rnd = new Random();
@@ -36,6 +36,7 @@ namespace TripleXORNeuralNetwork
         {
             return output * (1.0 - output);
         }
+
 
         // Вычисление выхода нейрона
         public double ComputeOutput(List<double> inputs)
@@ -102,7 +103,8 @@ namespace TripleXORNeuralNetwork
                 // Инициализация сети с нуля
                 Layers.Add(new Layer(hiddenNeurons, inputSize));
                 Layers.Add(new Layer(hiddenNeurons, hiddenNeurons));
-                Layers.Add(new Layer(outputNeurons, hiddenNeurons));
+                Layers.Add(new Layer(15, hiddenNeurons));
+                Layers.Add(new Layer(outputNeurons, 15));
                 this.learningRate = learningRate;
             }
         }
@@ -137,6 +139,17 @@ namespace TripleXORNeuralNetwork
                     var formatter = new BinaryFormatter();
                     Layers = (List<Layer>)formatter.Deserialize(fileStream);
                 }
+
+                // Сброс временных значений нейронов
+                /*foreach (var layer in Layers)
+                {
+                    foreach (var neuron in layer.Neurons)
+                    {
+                        neuron.Output = 0.0;
+                        neuron.Delta = 0.0;
+                    }
+                }*/
+
                 Console.WriteLine("Параметры сети успешно загружены из файла .nn.");
             }
             catch (Exception ex)
@@ -144,6 +157,12 @@ namespace TripleXORNeuralNetwork
                 Console.ForegroundColor = ConsoleColor.Red;
                 Console.WriteLine($"Ошибка загрузки параметров сети: {ex.Message}");
                 Console.ResetColor();
+
+                // В случае ошибки, создаём новую сеть с нуля
+                Layers = new List<Layer>();
+                Layers.Add(new Layer(30, 784)); // Пример: скрытые и входные нейроны
+                Layers.Add(new Layer(10, 30)); // Пример: выходные и скрытые нейроны
+                Console.WriteLine("Сеть создана заново с параметрами по умолчанию.");
             }
         }
         // Метод прямого прохода (Forward Pass)
@@ -168,12 +187,14 @@ namespace TripleXORNeuralNetwork
             for (int i = 0; i < outputLayer.Neurons.Count; i++)
             {
                 Neuron neuron = outputLayer.Neurons[i];
-                double error = expectedOutputs[i] - neuron.Output;
+                double error = expectedOutputs[i] - neuron.Output; // Ошибка выхода
                 neuron.Delta = error * Neuron.SigmoidDerivative(neuron.Output);
+                //Console.WriteLine($"Output Neuron Delta[{i}]: {neuron.Delta:F4}");
             }
 
+
             // Вычисление ошибки для скрытых слоёв
-            for (int i = Layers.Count - 2; i >= 0; i--)
+            for (int i = Layers.Count - 2; i >= 0; i--) // Проход назад
             {
                 Layer currentLayer = Layers[i];
                 Layer nextLayer = Layers[i + 1];
@@ -185,8 +206,10 @@ namespace TripleXORNeuralNetwork
                         error += nextLayer.Neurons[k].Weights[j] * nextLayer.Neurons[k].Delta;
                     }
                     currentLayer.Neurons[j].Delta = error * Neuron.SigmoidDerivative(currentLayer.Neurons[j].Output);
+                    //Console.WriteLine($"Hidden Neuron Delta[{j}]: {currentLayer.Neurons[j].Delta:F4}");
                 }
             }
+
 
             // Обновление весов и смещений
             for (int i = 0; i < Layers.Count; i++)
@@ -198,10 +221,15 @@ namespace TripleXORNeuralNetwork
                 {
                     for (int j = 0; j < neuron.Weights.Count; j++)
                     {
+                        double oldWeight = neuron.Weights[j];
                         neuron.Weights[j] += learningRate * neuron.Delta * layerInputs[j];
+                        //Console.WriteLine($"Weight[{j}]: {oldWeight:F4} -> {neuron.Weights[j]:F4}");
                     }
+                    double oldBias = neuron.Bias;
                     neuron.Bias += learningRate * neuron.Delta;
+                    //Console.WriteLine($"Bias: {oldBias:F4} -> {neuron.Bias:F4}");
                 }
+
             }
         }
 
@@ -261,7 +289,7 @@ namespace TripleXORNeuralNetwork
                 hiddenNeurons = 3;
             }*/
             int input = 784;
-            network = new NeuralNetwork(input, 30, 10); // Пользователь задаёт количество скрытых нейронов
+            network = new NeuralNetwork(input, 30, 10, 0.1); // Пользователь задаёт количество скрытых нейронов
 
             // Определение обучающего набора для XOR с тремя входами
             trainingSet = GenerateTrainingData(input);
