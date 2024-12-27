@@ -1,13 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.Text.Json;
 
 namespace TripleXORNeuralNetwork
 {
     // Класс, представляющий отдельный нейрон
     public class Neuron
     {
-        public List<double> Weights { get; private set; }
+        public List<double> Weights { get; set; }
         public double Bias { get; set; }
         public double Output { get; private set; }
         public double Delta { get; set; }
@@ -20,9 +18,10 @@ namespace TripleXORNeuralNetwork
             for (int i = 0; i < inputCount; i++)
             {
                 // Инициализация весов случайными значениями от -1 до 1
-                Weights.Add(rnd.NextDouble() * 2 - 1);
+                Weights.Add(rnd.NextDouble() - 0.5); // Диапазон [-0.5, 0.5]
+
             }
-            Bias = rnd.NextDouble() * 2 - 1;
+            Bias = rnd.NextDouble() - 0.5;
         }
 
         // Сигмоидальная функция активации
@@ -80,19 +79,77 @@ namespace TripleXORNeuralNetwork
     }
 
     // Класс, представляющий нейронную сеть
+    // Класс, представляющий нейронную сеть
     public class NeuralNetwork
     {
         public List<Layer> Layers { get; private set; }
         private double learningRate;
-
+        private const string FilePath = "network_parameters.json";
         public NeuralNetwork(int inputSize, int hiddenNeurons, int outputNeurons, double learningRate = 0.1)
         {
             Layers = new List<Layer>();
-            Layers.Add(new Layer(hiddenNeurons, inputSize)); // Скрытый слой
-            Layers.Add(new Layer(outputNeurons, hiddenNeurons)); // Выходной слой
-            this.learningRate = learningRate;
+
+            // Проверяем наличие файла с параметрами
+            if (File.Exists(FilePath))
+            {
+                LoadParameters();
+            }
+            else
+            {
+                // Инициализация сети с нуля
+                Layers.Add(new Layer(hiddenNeurons, inputSize));
+                Layers.Add(new Layer(hiddenNeurons, hiddenNeurons));
+                Layers.Add(new Layer(outputNeurons, hiddenNeurons));
+                this.learningRate = learningRate;
+            }
         }
 
+        // Метод сохранения параметров сети в файл
+        public void SaveParameters()
+        {
+            var networkData = Layers.Select(layer =>
+                layer.Neurons.Select(neuron => new
+                {
+                    neuron.Weights,
+                    neuron.Bias
+                }).ToList()
+            ).ToList();
+
+            var json = JsonSerializer.Serialize(networkData, new JsonSerializerOptions { WriteIndented = true });
+            File.WriteAllText(FilePath, json);
+
+            Console.WriteLine("Параметры сети успешно сохранены.");
+        }
+
+        // Метод загрузки параметров сети из файла
+        public void LoadParameters()
+        {
+            try
+            {
+                var json = File.ReadAllText(FilePath);
+                var networkData = JsonSerializer.Deserialize<List<List<dynamic>>>(json);
+
+                Layers = new List<Layer>();
+                foreach (var layerData in networkData)
+                {
+                    var layer = new Layer(layerData.Count, layerData[0].Weights.Count);
+                    for (int i = 0; i < layerData.Count; i++)
+                    {
+                        layer.Neurons[i].Weights = layerData[i].Weights.ToList();
+                        layer.Neurons[i].Bias = layerData[i].Bias;
+                    }
+                    Layers.Add(layer);
+                }
+
+                Console.WriteLine("Параметры сети успешно загружены из файла.");
+            }
+            catch (Exception ex)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine($"Ошибка загрузки параметров сети: {ex.Message}");
+                Console.ResetColor();
+            }
+        }
         // Метод прямого прохода (Forward Pass)
         public List<double> ForwardPass(List<double> inputs)
         {
@@ -119,7 +176,7 @@ namespace TripleXORNeuralNetwork
                 neuron.Delta = error * Neuron.SigmoidDerivative(neuron.Output);
             }
 
-            // Вычисление ошибки для скрытого слоя
+            // Вычисление ошибки для скрытых слоёв
             for (int i = Layers.Count - 2; i >= 0; i--)
             {
                 Layer currentLayer = Layers[i];
@@ -197,7 +254,7 @@ namespace TripleXORNeuralNetwork
         public Menu()
         {
             // Инициализация нейронной сети с 3 входами, 3 нейронами в скрытом слое и 1 нейроном в выходном слое
-            Console.Write("Введите количество нейронов в скрытом слое (рекомендуется 2 или 3): ");
+            /*Console.Write("Введите количество нейронов в скрытом слое (рекомендуется 2 или 3): ");
             int hiddenNeurons = 3;
             string inputNeurons = Console.ReadLine();
             if (!int.TryParse(inputNeurons, out hiddenNeurons) || hiddenNeurons <= 0)
@@ -206,44 +263,91 @@ namespace TripleXORNeuralNetwork
                 Console.WriteLine("Некорректный ввод. Используется значение по умолчанию: 3 нейрона.");
                 Console.ResetColor();
                 hiddenNeurons = 3;
-            }
-
-            network = new NeuralNetwork(8, hiddenNeurons, 1, 0.1); // Пользователь задаёт количество скрытых нейронов
+            }*/
+            int input = 784;
+            network = new NeuralNetwork(input, 30, 10); // Пользователь задаёт количество скрытых нейронов
 
             // Определение обучающего набора для XOR с тремя входами
-            trainingSet = GenerateTrainingData(8);
+            trainingSet = GenerateTrainingData(input);
+
 
         }
-        
+
         // Метод для генерации обучающих данных программно
         private List<TrainingData> GenerateTrainingData(int numberOfInputs)
         {
             List<TrainingData> dataSet = new List<TrainingData>();
-            int totalCombinations = (int)Math.Pow(2, numberOfInputs);
 
-            for (int i = 0; i < totalCombinations; i++)
+            // Пути к файлам
+            string dataFilePath = "../../../inputs.txt"; // Файл с пикселями изображения
+            string labelsFilePath = "../../../labels.txt"; // Файл с метками (классами)
+
+            // Проверяем существование файлов
+            if (!File.Exists(dataFilePath) || !File.Exists(labelsFilePath))
             {
-                List<double> inputs = new List<double>();
-                int temp = i;
-                int countOnes = 0;
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine("Файлы с данными не найдены. Убедитесь, что 'inputs.txt' и 'labels.txt' существуют.");
+                Console.ResetColor();
+                return dataSet;
+            }
 
-                for (int bit = 0; bit < numberOfInputs; bit++)
+            try
+            {
+                // Считываем данные из файлов
+                var dataLines = File.ReadAllLines(dataFilePath);
+                var labelLines = File.ReadAllLines(labelsFilePath);
+
+                // Убедимся, что количество строк совпадает
+                if (dataLines.Length != labelLines.Length)
                 {
-                    double input = (temp & 1) == 1 ? 1.0 : 0.0;
-                    inputs.Add(input);
-                    if (input == 1.0)
-                        countOnes++;
-                    temp >>= 1;
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine("Количество строк в 'inputs.txt' и 'labels.txt' не совпадает.");
+                    Console.ResetColor();
+                    return dataSet;
                 }
 
-                // Определение ожидаемого выхода (1 если нечётное количество единиц, иначе 0)
-                double expectedOutput = (countOnes % 2 == 1) ? 1.0 : 0.0;
+                // Парсим данные
+                for (int i = 0; i < dataLines.Length; i++)
+                {
+                    // Преобразуем строку пикселей в список чисел
+                    var inputValues = dataLines[i]
+                        .Split(',', StringSplitOptions.RemoveEmptyEntries)
+                        .Select(value => double.Parse(value) / 255.0) // Нормализация в диапазон [0, 1]
+                        .ToList();
 
-                dataSet.Add(new TrainingData(inputs, new List<double> { expectedOutput }));
+
+                    // Преобразуем метку в список чисел (например, one-hot encoding)
+                    var label = int.Parse(labelLines[i]);
+                    var outputValues = new List<double>(new double[10]); // Предполагаем 10 классов
+                    outputValues[label] = 1.0;
+
+                    // Проверяем количество входных данных
+                    if (inputValues.Count != numberOfInputs)
+                    {
+                        Console.ForegroundColor = ConsoleColor.Red;
+                        Console.WriteLine($"Ошибка в строке {i + 1}: количество входных значений ({inputValues.Count}) не совпадает с ожидаемым ({numberOfInputs}).");
+                        Console.ResetColor();
+                        continue;
+                    }
+
+                    // Добавляем данные в набор
+                    dataSet.Add(new TrainingData(inputValues, outputValues));
+                }
+
+                Console.ForegroundColor = ConsoleColor.Green;
+                Console.WriteLine("Данные успешно загружены из файлов.");
+                Console.ResetColor();
+            }
+            catch (Exception ex)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine($"Ошибка при чтении файлов: {ex.Message}");
+                Console.ResetColor();
             }
 
             return dataSet;
         }
+
 
         public void Display()
         {
@@ -314,36 +418,117 @@ namespace TripleXORNeuralNetwork
 
             for (int epoch = 1; epoch <= epochs; epoch++)
             {
-                foreach (var data in trainingSet)
+                Random rnd = new Random();
+                var shuffledTrainingSet = trainingSet.OrderBy(_ => rnd.Next()).ToList();
+
+                foreach (var data in shuffledTrainingSet)
                 {
                     network.Train(data.Inputs, data.ExpectedOutputs);
                 }
 
-                if (epoch % 1000 == 0)
+                double error = network.CalculateError(trainingSet);
+                Console.WriteLine($"Эпоха {epoch}, Ошибка: {error:F6}");
+                if (error < threshold)
                 {
-                    double error = network.CalculateError(trainingSet);
-                    Console.WriteLine($"Эпоха {epoch}, Ошибка: {error:F6}");
-                    if (error < threshold)
-                    {
-                        Console.WriteLine("Порог ошибки достигнут. Обучение завершено.");
-                        return;
-                    }
+                    Console.WriteLine("Порог ошибки достигнут. Обучение завершено.");
+
+                    // Сохранение параметров после успешного завершения
+                    network.SaveParameters();
+                    return;
                 }
             }
 
+            // Сохранение параметров после завершения обучения по эпохам
+            network.SaveParameters();
             Console.WriteLine("Обучение завершено.");
         }
 
+
         private void TestNetwork()
         {
-            Console.WriteLine("Тестирование сети на данных XOR (Три Входа):");
-            foreach (var data in trainingSet)
+            // Пути к файлам с проверочными данными
+            string testDataFilePath = "../../../inputs2.txt"; // Файл с пикселями проверочных данных
+            string testLabelsFilePath = "../../../labels2.txt"; // Файл с метками проверочных данных
+
+            // Проверяем существование файлов
+            if (!File.Exists(testDataFilePath) || !File.Exists(testLabelsFilePath))
             {
-                var output = network.ForwardPass(data.Inputs);
-                double predicted = output[0] >= 0.5 ? 1 : 0;
-                Console.WriteLine($"Входы: {string.Join(", ", data.Inputs)} | Ожидаемый выход: {data.ExpectedOutputs[0]} | Предсказанный выход: {predicted}");
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine("Файлы с проверочными данными не найдены. Убедитесь, что 'input2.txt' и 'label2.txt' существуют.");
+                Console.ResetColor();
+                return;
+            }
+
+            try
+            {
+                // Считываем данные из файлов
+                var testDataLines = File.ReadAllLines(testDataFilePath);
+                var testLabelLines = File.ReadAllLines(testLabelsFilePath);
+
+                // Убедимся, что количество строк совпадает
+                if (testDataLines.Length != testLabelLines.Length)
+                {
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine("Количество строк в 'inputs2.txt' и 'labels2.txt' не совпадает.");
+                    Console.ResetColor();
+                    return;
+                }
+
+                // Инициализация счётчика ошибок
+                int totalSamples = testDataLines.Length;
+                int correctPredictions = 0;
+
+                // Тестирование сети
+                Console.WriteLine("Тестирование сети на проверочных данных:");
+
+                for (int i = 0; i < testDataLines.Length; i++)
+                {
+                    // Преобразуем строку пикселей в список чисел
+
+                    var inputValues = testDataLines[i]
+                        .Split(',', StringSplitOptions.RemoveEmptyEntries)
+                        .Select(value => double.Parse(value) / 255.0) // Нормализация в диапазон [0, 1]
+                        .ToList();
+
+                    // Читаем ожидаемую метку
+                    var expectedLabel = int.Parse(testLabelLines[i]);
+
+                    // Получаем предсказания сети
+                    var output = network.ForwardPass(inputValues);
+
+                    // Находим класс с максимальной вероятностью
+                    int predictedLabel = output.IndexOf(output.Max());
+
+                    // Проверяем корректность предсказания
+                    if (predictedLabel == expectedLabel)
+                    {
+                        correctPredictions++;
+                    }
+
+                    Console.WriteLine($"Ожидаемый выход: {expectedLabel} | Предсказанный выход: {predictedLabel}");
+                }
+
+                // Расчёт процента ошибок
+                double accuracy = (double)correctPredictions / totalSamples * 100;
+                double errorRate = 100 - accuracy;
+
+                Console.WriteLine($"\nВсего тестовых выборок: {totalSamples}");
+                Console.WriteLine($"Правильных предсказаний: {correctPredictions}");
+                Console.WriteLine($"Точность: {accuracy:F2}%");
+                Console.WriteLine($"Процент ошибок: {errorRate:F2}%");
+
+                Console.ForegroundColor = ConsoleColor.Green;
+                Console.WriteLine("Тестирование завершено.");
+                Console.ResetColor();
+            }
+            catch (Exception ex)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine($"Ошибка при чтении проверочных данных: {ex.Message}");
+                Console.ResetColor();
             }
         }
+
 
         private void ShowNetworkParameters()
         {
